@@ -1,1 +1,0 @@
-"0","fit <- fitmaxstab(data = rain, coord = coord[, 1:2], cov.mod = ""brown"")"

@@ -1,6 +1,0 @@
-"0","set.seed(123)"
-"0",""
-"0","# Simulate 100 samples of 3D unit Pareto margins"
-"0","n <- 100"
-"0","X <- matrix(rexp(n * 3, rate = 1), ncol = 3)  # exponential(1) has Pareto(1) tail"
-"0",""

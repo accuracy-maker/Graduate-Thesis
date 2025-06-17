@@ -1,3 +1,0 @@
-"0","s3d <- scatterplot3d(Z_normalized, color = ""blue"", pch = 16,"
-"0","                     xlab = ""X1"", ylab = ""X2"", zlab = ""X3"","
-"0","                     main = ""L1 r-Pareto Sphere with Plane x+y+z=1"")"
