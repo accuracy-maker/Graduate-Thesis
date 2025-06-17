@@ -1,0 +1,126 @@
+---
+title: "intro r-pareto 3"
+output: html_notebook
+---
+
+In this notebook, I will have a try on a real dataset: rainfull which is a builtin dataset in SpatialExtreme package
+
+```{r}
+library(SpatialExtremes)   # rainfall data set
+library(mvPot)             # exact r-Pareto simulator  
+library(fields)            # distances
+library(ks)                # kernel density on the simplex
+set.seed(42)
+```
+
+## Load data
+```{r}
+data(rainfall)
+Y      <- rain
+coords <- coord[, 1:2]
+```
+
+## Unit-Pareto margin
+```{r}
+rank_Y   <- apply(Y, 2, rank, ties.method = "average")
+Y_par    <- 1 / (1 - rank_Y / (nrow(Y) + 1))      # unit-Pareto
+```
+
+## L1-Norm risk function
+```{r}
+r_L1     <- function(x) rowSums(x)
+u        <- quantile(r_L1(Y_par), 0.95)            # 95-th radial threshold
+idx_exc  <- which(r_L1(Y_par) > u)
+Z_obs    <- Y_par[idx_exc, ]
+Z_ang    <- Z_obs / r_L1(Z_obs)                    # angular part (∑ Z = 1)
+
+cat(sprintf("\nObserved r-Pareto angles above 95-th percentile : %d\n",
+            nrow(Z_ang)))
+```
+
+## Brown-Resnick Model
+A powered-exponential semi-variogram function is: $\gamma(h) = \frac{||h||}{\rho}^{\alpha}$
+
+```{r}
+sim_br_spectral <- function(n, coords, rho, alpha)
+{
+  gamma_h  <- function(h) (h / rho)^alpha
+  Dmat     <- as.matrix(dist(coords))
+  gamma_ij <- gamma_h(Dmat)
+
+  gamma0   <- gamma_h(sqrt(rowSums(coords^2)))     # γ(‖s_i‖)
+  Sigma    <- 0.5 * outer(gamma0, gamma0, "+") - 0.5 * gamma_ij
+  mu       <- -0.5 * diag(Sigma)
+
+  Y        <- mvtnorm::rmvnorm(n, mean = mu, sigma = Sigma)
+  exp(Y)                                         #  n × d  matrix
+}
+```
+
+
+```{r}
+sim_rPareto_BR <- function(n_total, coords, rho, alpha)
+{
+  W        <- sim_br_spectral(n_total, coords, rho, alpha)
+  R        <- rowSums(W)
+  keep     <- R > 1
+  Z_keep   <- W[keep, ] / R[keep]                # angular component
+  structure(Z_keep,
+            accept.rate = mean(keep),
+            n.accept    = sum(keep))
+}
+```
+
+
+## Monte-Carlo approximation of $\kappa$
+```{r}
+loglik_MC <- function(par, Z_obs, coords,
+                      n_MC = 5e4, h_bw = 0.015)
+{
+  rho   <- exp(par[1])
+  alpha <- plogis(par[2]) * 2
+
+  Z_mc  <- sim_rPareto_BR(n_MC, coords, rho, alpha)
+  acc   <- attr(Z_mc, "accept.rate")
+
+  clr <- function(z) log(z) - mean(log(z))
+  Z_clr_mc  <- t(apply(Z_mc , 1, clr))
+  Z_clr_obs <- t(apply(Z_obs, 1, clr))
+
+  kd <- ks::kde(x = Z_clr_mc,
+                H = diag(h_bw, ncol(Z_clr_mc)),
+                binned     = FALSE,
+                eval.points = Z_clr_obs)
+
+  ll  <- sum(kd$estimate)              # Monte-Carlo log-likelihood
+  attr(ll, "acc.rate") <- acc
+  ll
+}
+
+```
+Here, we are approximating the log-likelihood function:
+$\mathcal{l_{\mathcal{r}P}(\theta)} = \sum_{i=1}^{n_{u}}log\kappa(z_i;\theta) - n_ulog\kappa(\mathcal{A_r;\theta})$
+
+where $z_i$ are the observed r-pareto angles and $\kappa(\cdot;\theta)$ is the Brown-Resnick exponent-measure density. And because $\kappa(\mathcal{A_r};\theta)$ doesn't depend on $z_i$ we can drop it inside the optimiser.
+
+## fitting the model
+```{r}
+rho0  <- median(fields::rdist(coords))
+par0  <- c(log(rho0), qlogis(0.5))            # (log ρ₀, logit α₀)
+
+opt <- optim(par0,
+             fn       = loglik_MC,
+             Z_obs    = Z_ang,
+             coords   = coords,
+             method   = "Nelder-Mead",
+             control  = list(fnscale = -1, maxit = 80, reltol = 1e-4))
+
+rho_hat   <- exp(opt$par[1])
+alpha_hat <- plogis(opt$par[2]) * 2
+acc_hat   <- attr(opt$value, "acc.rate")
+
+cat(sprintf(
+  "\n================  Monte-Carlo MLE  =================\n  Range  ρ  : %6.2f km\n  Smooth α : %5.3f\n  MC accept-rate κ(𝒜_r;θ̂) ≈ %.4f\n====================================================\n",
+  rho_hat, alpha_hat, acc_hat))
+```
+

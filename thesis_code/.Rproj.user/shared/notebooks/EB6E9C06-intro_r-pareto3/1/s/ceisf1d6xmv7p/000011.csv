@@ -1,0 +1,3 @@
+"0","data(rainfall)"
+"0","Y      <- rain"
+"0","coords <- coord[, 1:2]"

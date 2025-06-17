@@ -1,0 +1,5 @@
+"0","library(SpatialExtremes)   # rainfall data set"
+"0","library(mvPot)             # exact r-Pareto simulator  "
+"0","library(fields)            # distances"
+"0","library(ks)                # kernel density on the simplex"
+"0","set.seed(42)"

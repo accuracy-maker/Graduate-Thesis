@@ -1,0 +1,2 @@
+"0","u <- 5  # threshold"
+"0","Z <- X[r_L1(X) > u, ]  # this is the r-Pareto sample with L1 functional"

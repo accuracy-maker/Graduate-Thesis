@@ -1,0 +1,5 @@
+"0","plot(coord[, ""lon""], coord[, ""lat""], "
+"0","     main = ""Spatial Distribution of Rainfall Stations"","
+"0","     xlab = ""Longitude"", ylab = ""Latitude"","
+"0","     pch = 19, col = ""blue"", cex = 1.2)"
+"0",""

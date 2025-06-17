@@ -1,0 +1,7 @@
+"0","# Load the library"
+"0","library(scatterplot3d)"
+"0",""
+"0","# Plot the 3D Pareto-like points"
+"0","s3d <- scatterplot3d(X, color = ""blue"", pch = 16,"
+"0","                     xlab = ""X1"", ylab = ""X2"", zlab = ""X3"","
+"0","                     main = ""L1-thresholded Extreme Points"")"

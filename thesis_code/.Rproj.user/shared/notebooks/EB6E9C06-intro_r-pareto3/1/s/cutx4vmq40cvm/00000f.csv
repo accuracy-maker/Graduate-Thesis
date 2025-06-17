@@ -1,0 +1,2 @@
+"0","rank_Y   <- apply(Y, 2, rank, ties.method = ""average"")"
+"0","Y_par    <- 1 / (1 - rank_Y / (nrow(Y) + 1))      # unit-Pareto"
